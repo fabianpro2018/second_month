@@ -55,7 +55,6 @@
             z-index: 20;
         }
 
-        /* --- ESCENA 1: CORAZÓN 3D --- */
         #canvas-container {
             position: absolute;
             top: 0;
@@ -107,7 +106,6 @@
             flex-shrink: 0;
         }
 
-        /* Indicación visual */
         .hint-text {
             position: absolute;
             bottom: 25%;
@@ -141,7 +139,6 @@
             z-index: 5;
         }
 
-        /* Mensajes y fotos */
         .memory-element {
             position: absolute;
             opacity: 0;
@@ -198,7 +195,7 @@
             pointer-events: none;
         }
 
-        /* --- MODAL --- */
+        /* MODAL */
         .modal {
             display: none; 
             position: fixed;
@@ -244,7 +241,6 @@
             z-index: 1001;
         }
 
-        /* Botón de la carta */
         #go-to-letter-btn {
             position: absolute;
             bottom: -100px;
@@ -271,7 +267,7 @@
             pointer-events: auto;
         }
 
-        /* --- ESCENA 2: LA CARTA --- */
+        /* LA CARTA */
         #message-screen {
             background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
             overflow-y: auto;
@@ -333,13 +329,12 @@
             margin-top: 40px;
         }
 
-        /* --- OPTIMIZACIÓN EXTREMA PARA DISPOSITIVOS MÓVILES --- */
+        /* CELULARES */
         @media (max-width: 600px) {
             .hint-text {
                 font-size: 1rem;
                 bottom: 15%;
             }
-            /* Permite que los textos largos salten de línea en vez de salirse de la pantalla */
             .floating-msg { 
                 font-size: 0.85rem; 
                 padding: 10px 18px; 
@@ -351,7 +346,6 @@
                 width: 110px; 
                 padding: 6px 6px 20px 6px; 
             }
-            
             .music-player { 
                 width: 85%; 
                 max-width: 300px;
@@ -369,7 +363,6 @@
             #go-to-letter-btn.show {
                 bottom: 30px;
             }
-
             .modal-content {
                 max-width: 95%;
                 max-height: 70vh;
@@ -379,7 +372,6 @@
                 right: 20px;
                 font-size: 35px;
             }
-
             .letter { 
                 padding: 25px; 
                 margin-top: 30px;
@@ -391,7 +383,8 @@
 </head>
 <body>
 
-    <audio id="bg-music" loop>
+    <!-- IMPORTANTE: Etiquetas preload="auto" y playsinline para que no lo bloquee el celular -->
+    <audio id="bg-music" loop preload="auto" playsinline>
         <source src="Song.mp3" type="audio/mpeg">
     </audio>
 
@@ -400,7 +393,6 @@
         <img class="modal-content" id="modal-img">
     </div>
 
-    <!-- ESCENA 1: EL UNIVERSO Y EL CORAZÓN -->
     <div id="canvas-container"></div>
     <div id="heart-screen" class="screen active">
         
@@ -416,7 +408,6 @@
         <button id="go-to-letter-btn" onclick="showLetter()">Read my letter 💌</button>
     </div>
 
-    <!-- ESCENA 2: LA CARTA FINAL -->
     <div id="message-screen" class="screen">
         <div class="content-container">
             <div class="letter">
@@ -443,33 +434,25 @@
 
         let scene, camera, renderer, composer, particles, centralHeart;
         let isTransitioning = false;
-        let isAudioPlaying = false;
         let currentMemoryIndex = 0;
         let currentActiveElement = null;
 
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
-        // POSICIONES SEGURAS: Modificadas para que NUNCA tapen el centro (donde está el corazón 3D)
         const memories = [
             { type: 'msg', text: 'Te amo un montónnnnnn, dont forget 💖', top: '15%', left: '50%', transform: 'translateX(-50%)' },
             { type: 'photo', src: 'foto1.jpg', top: '65%', right: '10%', rot: '8deg' },
-            
             { type: 'msg', text: 'I love your smile, dont forget smile please 🌟', top: '75%', left: '50%', transform: 'translateX(-50%)' },
             { type: 'photo', src: 'foto2.jpg', top: '20%', left: '10%', rot: '-12deg' },
-            
             { type: 'msg', text: 'Muchas gracias for being the best girlfriend ✨', top: '18%', left: '50%', transform: 'translateX(-50%)' },
             { type: 'photo', src: 'foto3.jpg', top: '60%', left: '15%', rot: '5deg' },
-            
             { type: 'msg', text: 'You are the best and my favorite volleyball player 🏐', top: '80%', left: '50%', transform: 'translateX(-50%)' },
             { type: 'photo', src: 'foto4.jpg', top: '25%', right: '10%', rot: '-8deg' },
-            
             { type: 'msg', text: 'Muchas gracias for your time 🕰️', top: '15%', left: '50%', transform: 'translateX(-50%)' },
             { type: 'photo', src: 'foto5.jpg', top: '65%', left: '8%', rot: '15deg' },
-            
             { type: 'msg', text: 'You make me very happy, muchas gracias ❤️', top: '78%', left: '50%', transform: 'translateX(-50%)' },
             { type: 'photo', src: 'foto6.jpg', top: '22%', left: '20%', rot: '-5deg' },
-            
             { type: 'msg', text: 'You are my whole universe. 🌌', top: '18%', left: '50%', transform: 'translateX(-50%)' },
             { type: 'photo', src: 'foto7.jpg', top: '62%', right: '15%', rot: '10deg' }
         ];
@@ -495,14 +478,8 @@
             const hintText = document.getElementById('click-hint');
             if (hintText) hintText.classList.add('hidden');
 
-            if (!isAudioPlaying) {
-                audio.play().catch(e => console.log("Audio play failed:", e));
-                isAudioPlaying = true;
-                document.getElementById('music-player').classList.add('show');
-            }
-
-            // Latido visual del corazón (Restaurado a su intensidad original)
-            centralHeart.scale.set(1.0, 1.0, 1.0);
+            // Latido visual del corazón
+            centralHeart.scale.set(1.5, 1.5, 1.5);
             centralHeart.material.emissive.setHex(0x660022);
             setTimeout(() => {
                 if(centralHeart) centralHeart.material.emissive.setHex(0x330011);
@@ -569,7 +546,7 @@
             scene.fog = new THREE.FogExp2(0x050510, 0.015);
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 40; // Restaurado a su distancia perfecta
+            camera.position.z = 40; 
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -578,7 +555,6 @@
             canvasContainer.appendChild(renderer.domElement);
 
             const renderScene = new THREE.RenderPass(scene, camera);
-            // Restaurado el brillo original a 1.8
             const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 2.0, 0.4, 0.1);
             bloomPass.strength = 1.8;
             bloomPass.radius = 0.5;
@@ -598,7 +574,6 @@
             pointLight2.position.set(-10, -10, 10);
             scene.add(pointLight2);
 
-            // CORAZÓN CENTRAL "GORDITO"
             const geometryHeart = new THREE.IcosahedronGeometry(2.2, 1); 
             const posAttribute = geometryHeart.attributes.position;
             
@@ -623,7 +598,6 @@
             }
             geometryHeart.computeVertexNormals();
 
-            // Material restaurado a los tonos oscuros elegantes
             const materialHeart = new THREE.MeshPhysicalMaterial({ 
                 color: 0xff1040, emissive: 0x330011, metalness: 0.4, roughness: 0.05,
                 clearcoat: 1.0, clearcoatRoughness: 0.1, flatShading: true,
@@ -631,7 +605,7 @@
             });
 
             centralHeart = new THREE.Mesh(geometryHeart, materialHeart);
-            centralHeart.scale.set(0.8, 0.8, 0.8); // Tamaño sutil original
+            centralHeart.scale.set(0.8, 0.8, 0.8);
             
             const innerLight = new THREE.PointLight(0xff4d6d, 1.5, 15);
             centralHeart.add(innerLight);
@@ -641,7 +615,6 @@
             dirLightFront.position.set(0, 5, 15);
             scene.add(dirLightFront);
 
-            // GALAXIA DE PARTÍCULAS
             const particlesCount = 8000;
             const posArray = new Float32Array(particlesCount * 3);
             const colorsArray = new Float32Array(particlesCount * 3);
@@ -686,7 +659,6 @@
                         float pulse = 1.0 + sin(time * 3.0 + random * 10.0) * 0.05;
                         p *= pulse;
                         vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
-                        // Restaurado el tamaño original de las partículas (70.0)
                         gl_PointSize = (scale * 70.0) / -mvPosition.z; 
                         gl_Position = projectionMatrix * mvPosition;
                     }
@@ -706,36 +678,77 @@
             particles = new THREE.Points(geometryParticles, particleShaderMaterial);
             scene.add(particles);
 
+            // EVENTOS UNIFICADOS Y SEGUROS PARA MÓVILES
             window.addEventListener('resize', onWindowResize, false);
-            window.addEventListener('pointerdown', onPointerDown, false);
+            
+            // Usamos 'click' y 'touchend' para asegurar soporte universal sin crashes
+            const interactionHandler = function(e) {
+                if(isTransitioning) return;
+                
+                // Extraer coordenadas de forma segura para PC y Celulares
+                let clientX = 0, clientY = 0;
+                if (e.changedTouches && e.changedTouches.length > 0) {
+                    clientX = e.changedTouches[0].clientX;
+                    clientY = e.changedTouches[0].clientY;
+                } else if (e.clientX !== undefined) {
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                } else {
+                    return;
+                }
+
+                // Evitar clics falsos en la interfaz
+                if (e.target && e.target.closest) {
+                    if (e.target.closest('.modal') || e.target.closest('.floating-photo') || e.target.tagName === 'BUTTON') {
+                        return;
+                    }
+                }
+
+                mouse.x = (clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObject(centralHeart);
+                
+                if (intersects.length > 0) {
+                    // AQUÍ ESTÁ LA MAGIA: Forzar reproducción sincronizada en el evento exacto del toque
+                    if (audio.paused) {
+                        audio.play().then(() => {
+                            document.getElementById('music-player').classList.add('show');
+                        }).catch(err => console.log("Audio block bypass failed:", err));
+                    } else {
+                        document.getElementById('music-player').classList.add('show');
+                    }
+                    triggerNextMemory();
+                }
+            };
+
+            // Prevenir doble ejecución rápida entre touch y click
+            let lastExec = 0;
+            const safeInteraction = function(e) {
+                if (Date.now() - lastExec < 300) return;
+                lastExec = Date.now();
+                interactionHandler(e);
+            };
+
+            window.addEventListener('click', safeInteraction, false);
+            window.addEventListener('touchend', safeInteraction, false);
             window.addEventListener('pointermove', onPointerMove, false);
 
             animate();
         }
 
-        function onPointerDown(event) {
-            if(isTransitioning) return;
-            
-            if (event.target.closest('.modal') || event.target.closest('.floating-photo') || event.target.tagName === 'BUTTON') {
-                return;
-            }
-
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObject(centralHeart);
-            
-            if (intersects.length > 0) {
-                triggerNextMemory();
-            }
-        }
-
         function onPointerMove(event) {
             if(isTransitioning || modal.classList.contains('show')) return;
             
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            let clientX = event.clientX;
+            let clientY = event.clientY;
+            
+            // Ignorar en móviles para evitar bugs de hover
+            if(event.pointerType === 'touch') return;
+
+            mouse.x = (clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
             
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObject(centralHeart);
@@ -765,7 +778,6 @@
             }
 
             if (centralHeart && !isTransitioning) {
-                // Restaurada la escala base del latido a 0.8
                 const beat = Math.sin(elapsedTime * 5) * 0.03 + 0.8; 
                 centralHeart.scale.set(beat, beat, beat);
                 centralHeart.rotation.y = elapsedTime * 0.5;
