@@ -19,7 +19,7 @@
     <style>
         :root {
             --primary-color: #ff4d6d;
-            --bg-dark: #050510;
+            --bg-dark: #05050a;
             --text-dark: #333;
         }
 
@@ -67,7 +67,7 @@
 
         #heart-screen {
             background-color: transparent;
-            pointer-events: none; /* Permite clics hacia el canvas 3D */
+            pointer-events: none;
         }
 
         /* Barra de música */
@@ -88,6 +88,7 @@
             font-size: 0.9rem;
             transition: top 1s ease;
             z-index: 5;
+            white-space: nowrap;
         }
 
         .music-player.show {
@@ -103,9 +104,10 @@
             justify-content: center;
             align-items: center;
             font-size: 0.8rem;
+            flex-shrink: 0;
         }
 
-        /* Indicación visual para presionar el corazón */
+        /* Indicación visual */
         .hint-text {
             position: absolute;
             bottom: 25%;
@@ -120,6 +122,7 @@
             transition: opacity 0.5s ease;
             z-index: 5;
             text-shadow: 0 2px 10px rgba(255, 77, 109, 0.6);
+            white-space: nowrap;
         }
 
         @keyframes pulse-hint {
@@ -131,7 +134,6 @@
             opacity: 0 !important;
         }
 
-        /* Contenedor de recuerdos */
         #floating-elements {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -139,7 +141,7 @@
             z-index: 5;
         }
 
-        /* Estilos base para mensajes y fotos */
+        /* Mensajes y fotos */
         .memory-element {
             position: absolute;
             opacity: 0;
@@ -152,7 +154,6 @@
             transform: translateY(0) scale(1) rotate(var(--rot, 0deg));
         }
 
-        /* Animación de caída al presionar el corazón de nuevo */
         .memory-element.fall {
             opacity: 0 !important;
             transform: translateY(120px) scale(0.8) rotate(calc(var(--rot, 0deg) + 15deg)) !important;
@@ -169,6 +170,7 @@
             font-weight: 500;
             box-shadow: 0 10px 25px rgba(0,0,0,0.3);
             white-space: nowrap;
+            text-align: center;
         }
 
         .floating-photo {
@@ -178,7 +180,7 @@
             box-shadow: 0 15px 35px rgba(0,0,0,0.5);
             border-radius: 4px;
             transform-origin: center top;
-            pointer-events: auto; /* Permite que las fotos sean clickeables */
+            pointer-events: auto;
             cursor: pointer;
             transition: transform 0.3s ease;
         }
@@ -193,10 +195,10 @@
             border-radius: 2px;
             aspect-ratio: 1/1;
             object-fit: cover;
-            pointer-events: none; /* Para no interferir con el clic del contenedor padre */
+            pointer-events: none;
         }
 
-        /* --- MODAL PARA IMAGENES (NUEVO) --- */
+        /* --- MODAL --- */
         .modal {
             display: none; 
             position: fixed;
@@ -242,14 +244,6 @@
             z-index: 1001;
         }
 
-        .close-modal:hover,
-        .close-modal:focus {
-            color: var(--primary-color);
-            text-decoration: none;
-            cursor: pointer;
-            transform: scale(1.1);
-        }
-
         /* Botón de la carta */
         #go-to-letter-btn {
             position: absolute;
@@ -268,11 +262,7 @@
             pointer-events: none;
             transition: all 1s ease;
             z-index: 10;
-        }
-
-        #go-to-letter-btn:hover {
-            background: rgba(255, 77, 109, 1);
-            transform: translateX(-50%) scale(1.05);
+            white-space: nowrap;
         }
 
         #go-to-letter-btn.show {
@@ -343,25 +333,28 @@
             margin-top: 40px;
         }
 
-        /* --- OPTIMIZACIÓN PARA DISPOSITIVOS MÓVILES --- */
+        /* --- OPTIMIZACIÓN EXTREMA PARA DISPOSITIVOS MÓVILES --- */
         @media (max-width: 600px) {
             .hint-text {
                 font-size: 1rem;
-                bottom: 20%;
+                bottom: 15%;
             }
-            /* Textos más compactos y fotos más pequeñas para no tapar el corazón central */
+            /* Permite que los textos largos salten de línea en vez de salirse de la pantalla */
             .floating-msg { 
                 font-size: 0.85rem; 
                 padding: 10px 18px; 
+                white-space: normal;
+                max-width: 85vw;
+                line-height: 1.4;
             }
             .floating-photo { 
-                width: 100px; 
+                width: 110px; 
                 padding: 6px 6px 20px 6px; 
             }
             
-            /* Ajustes en la música y botones */
             .music-player { 
                 width: 85%; 
+                max-width: 300px;
                 justify-content: center; 
                 padding: 8px 15px;
                 font-size: 0.8rem;
@@ -374,10 +367,9 @@
                 padding: 10px 25px;
             }
             #go-to-letter-btn.show {
-                bottom: 40px;
+                bottom: 30px;
             }
 
-            /* Ajustes en el modal para móvil */
             .modal-content {
                 max-width: 95%;
                 max-height: 70vh;
@@ -388,27 +380,12 @@
                 font-size: 35px;
             }
 
-            /* Ajustes en la carta final */
             .letter { 
                 padding: 25px; 
                 margin-top: 30px;
             }
-            .letter h1 {
-                font-size: 1.6rem;
-            }
-            .letter p {
-                font-size: 0.95rem;
-                line-height: 1.6;
-            }
-            .letter::before {
-                font-size: 3rem;
-                top: 5px;
-                left: 10px;
-            }
-            .signature {
-                font-size: 1.2rem;
-                margin-top: 30px;
-            }
+            .letter h1 { font-size: 1.6rem; }
+            .letter p { font-size: 0.95rem; }
         }
     </style>
 </head>
@@ -418,7 +395,6 @@
         <source src="Song.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- Modal para ver imágenes en pantalla completa -->
     <div id="image-modal" class="modal">
         <span class="close-modal" onclick="closeModal()">&times;</span>
         <img class="modal-content" id="modal-img">
@@ -462,14 +438,11 @@
         const audio = document.getElementById('bg-music');
         const floatingContainer = document.getElementById('floating-elements');
 
-        // Variables Modal
         const modal = document.getElementById('image-modal');
         const modalImg = document.getElementById('modal-img');
 
         let scene, camera, renderer, composer, particles, centralHeart;
         let isTransitioning = false;
-        
-        // Variables para el control de la secuencia paso a paso
         let isAudioPlaying = false;
         let currentMemoryIndex = 0;
         let currentActiveElement = null;
@@ -477,33 +450,32 @@
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
-        // REVISA ESTOS NOMBRES: Ahora están configurados para usar .jpg
+        // POSICIONES SEGURAS: Modificadas para que NUNCA tapen el centro (donde está el corazón 3D)
         const memories = [
-            { type: 'msg', text: 'Te amo un montónnnnnn, dont forget 💖', top: '25%', left: '10%' },
-            { type: 'photo', src: 'foto1.jpg', top: '55%', right: '15%', rot: '8deg' },
+            { type: 'msg', text: 'Te amo un montónnnnnn, dont forget 💖', top: '15%', left: '50%', transform: 'translateX(-50%)' },
+            { type: 'photo', src: 'foto1.jpg', top: '65%', right: '10%', rot: '8deg' },
             
-            { type: 'msg', text: 'I love your smile, dont forget smile please 🌟', top: '15%', right: '10%' },
-            { type: 'photo', src: 'foto2.jpg', top: '60%', left: '10%', rot: '-12deg' },
+            { type: 'msg', text: 'I love your smile, dont forget smile please 🌟', top: '75%', left: '50%', transform: 'translateX(-50%)' },
+            { type: 'photo', src: 'foto2.jpg', top: '20%', left: '10%', rot: '-12deg' },
             
-            { type: 'msg', text: 'Muchas gracias for being the best girlfriend ✨', top: '75%', left: '50%', transform: 'translateX(-50%)' },
-            { type: 'photo', src: 'foto3.jpg', top: '25%', left: '15%', rot: '5deg' },
+            { type: 'msg', text: 'Muchas gracias for being the best girlfriend ✨', top: '18%', left: '50%', transform: 'translateX(-50%)' },
+            { type: 'photo', src: 'foto3.jpg', top: '60%', left: '15%', rot: '5deg' },
             
-            { type: 'msg', text: 'You are the best and my favorite voleyball player 🏐', top: '45%', right: '5%' },
-            { type: 'photo', src: 'foto4.jpg', top: '70%', right: '20%', rot: '-8deg' },
+            { type: 'msg', text: 'You are the best and my favorite volleyball player 🏐', top: '80%', left: '50%', transform: 'translateX(-50%)' },
+            { type: 'photo', src: 'foto4.jpg', top: '25%', right: '10%', rot: '-8deg' },
             
-            { type: 'msg', text: 'Muchas gracias for your time 🕰️', top: '10%', left: '50%', transform: 'translateX(-50%)' },
-            { type: 'photo', src: 'foto5.jpg', top: '50%', left: '8%', rot: '15deg' },
+            { type: 'msg', text: 'Muchas gracias for your time 🕰️', top: '15%', left: '50%', transform: 'translateX(-50%)' },
+            { type: 'photo', src: 'foto5.jpg', top: '65%', left: '8%', rot: '15deg' },
             
-            { type: 'msg', text: 'You make me very happy, muchas gracias ❤️', top: '35%', right: '12%' },
-            { type: 'photo', src: 'foto6.jpg', top: '15%', left: '20%', rot: '-5deg' },
+            { type: 'msg', text: 'You make me very happy, muchas gracias ❤️', top: '78%', left: '50%', transform: 'translateX(-50%)' },
+            { type: 'photo', src: 'foto6.jpg', top: '22%', left: '20%', rot: '-5deg' },
             
-            { type: 'msg', text: 'You are my whole universe. 🌌', top: '80%', left: '50%', transform: 'translateX(-50%)' },
-            { type: 'photo', src: 'foto7.jpg', top: '40%', right: '25%', rot: '10deg' }
+            { type: 'msg', text: 'You are my whole universe. 🌌', top: '18%', left: '50%', transform: 'translateX(-50%)' },
+            { type: 'photo', src: 'foto7.jpg', top: '62%', right: '15%', rot: '10deg' }
         ];
 
         window.onload = initThreeJS;
 
-        // --- Funciones del Modal ---
         function openModal(imageSrc) {
             modalImg.src = imageSrc;
             modal.classList.add('show');
@@ -513,16 +485,13 @@
             modal.classList.remove('show');
         }
 
-        // Cierra el modal si se hace clic fuera de la imagen (en el fondo negro)
         modal.addEventListener('click', function(e) {
             if (e.target !== modalImg) {
                 closeModal();
             }
         });
 
-        // --- Lógica Principal de Secuencia ---
         function triggerNextMemory() {
-            // Ocultar el texto de ayuda al primer clic
             const hintText = document.getElementById('click-hint');
             if (hintText) hintText.classList.add('hidden');
 
@@ -532,6 +501,7 @@
                 document.getElementById('music-player').classList.add('show');
             }
 
+            // Latido visual del corazón (Restaurado a su intensidad original)
             centralHeart.scale.set(1.0, 1.0, 1.0);
             centralHeart.material.emissive.setHex(0x660022);
             setTimeout(() => {
@@ -554,11 +524,7 @@
                 } else {
                     div.style.setProperty('--rot', memory.rot);
                     div.innerHTML = `<img src="${memory.src}" alt="Recuerdo">`;
-                    
-                    // Hacer la foto clickeable para abrir el Modal
-                    div.onclick = function() {
-                        openModal(memory.src);
-                    };
+                    div.onclick = function() { openModal(memory.src); };
                 }
 
                 if(memory.top) div.style.top = memory.top;
@@ -603,7 +569,7 @@
             scene.fog = new THREE.FogExp2(0x050510, 0.015);
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 40;
+            camera.position.z = 40; // Restaurado a su distancia perfecta
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -612,6 +578,7 @@
             canvasContainer.appendChild(renderer.domElement);
 
             const renderScene = new THREE.RenderPass(scene, camera);
+            // Restaurado el brillo original a 1.8
             const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 2.0, 0.4, 0.1);
             bloomPass.strength = 1.8;
             bloomPass.radius = 0.5;
@@ -656,6 +623,7 @@
             }
             geometryHeart.computeVertexNormals();
 
+            // Material restaurado a los tonos oscuros elegantes
             const materialHeart = new THREE.MeshPhysicalMaterial({ 
                 color: 0xff1040, emissive: 0x330011, metalness: 0.4, roughness: 0.05,
                 clearcoat: 1.0, clearcoatRoughness: 0.1, flatShading: true,
@@ -663,7 +631,7 @@
             });
 
             centralHeart = new THREE.Mesh(geometryHeart, materialHeart);
-            centralHeart.scale.set(0.8, 0.8, 0.8);
+            centralHeart.scale.set(0.8, 0.8, 0.8); // Tamaño sutil original
             
             const innerLight = new THREE.PointLight(0xff4d6d, 1.5, 15);
             centralHeart.add(innerLight);
@@ -673,7 +641,7 @@
             dirLightFront.position.set(0, 5, 15);
             scene.add(dirLightFront);
 
-            // GALAXIA
+            // GALAXIA DE PARTÍCULAS
             const particlesCount = 8000;
             const posArray = new Float32Array(particlesCount * 3);
             const colorsArray = new Float32Array(particlesCount * 3);
@@ -718,7 +686,9 @@
                         float pulse = 1.0 + sin(time * 3.0 + random * 10.0) * 0.05;
                         p *= pulse;
                         vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
-                        gl_PointSize = (scale * 70.0) / -mvPosition.z; gl_Position = projectionMatrix * mvPosition;
+                        // Restaurado el tamaño original de las partículas (70.0)
+                        gl_PointSize = (scale * 70.0) / -mvPosition.z; 
+                        gl_Position = projectionMatrix * mvPosition;
                     }
                 `,
                 fragmentShader: `
@@ -746,7 +716,6 @@
         function onPointerDown(event) {
             if(isTransitioning) return;
             
-            // PREVENIR que se active el corazón si hacemos clic en la modal, en el botón o en la foto
             if (event.target.closest('.modal') || event.target.closest('.floating-photo') || event.target.tagName === 'BUTTON') {
                 return;
             }
@@ -796,7 +765,8 @@
             }
 
             if (centralHeart && !isTransitioning) {
-                const beat = Math.sin(elapsedTime * 5) * 0.03 + 0.8;
+                // Restaurada la escala base del latido a 0.8
+                const beat = Math.sin(elapsedTime * 5) * 0.03 + 0.8; 
                 centralHeart.scale.set(beat, beat, beat);
                 centralHeart.rotation.y = elapsedTime * 0.5;
                 centralHeart.position.y = Math.sin(elapsedTime * 2) * 0.5;
