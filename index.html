@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ti amoooo</title>
+    
+    <!-- Librería Core de Three.js y Post-Procesamiento -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #ff4d6d;
+            --bg-dark: #050510;
+            --text-dark: #333;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-dark);
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1.5s ease-in-out, visibility 1.5s;
+            opacity: 0;
+            visibility: hidden;
+            z-index: 10;
+        }
+
+        .screen.active {
+            opacity: 1;
+            visibility: visible;
+            z-index: 20;
+        }
+
+        /* --- ESCENA 1: CORAZÓN 3D --- */
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #heart-screen {
+            background-color: transparent;
+            pointer-events: none; /* Permite clics hacia el canvas 3D */
+        }
+
+        /* Barra de música */
+        .music-player {
+            position: absolute;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 25px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+            font-size: 0.9rem;
+            transition: top 1s ease;
+            z-index: 5;
+        }
+
+        .music-player.show {
+            top: 30px;
+        }
+
+        .music-player .icon {
+            background: var(--primary-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8rem;
+        }
+
+        /* Indicación visual para presionar el corazón */
+        .hint-text {
+            position: absolute;
+            bottom: 25%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.2rem;
+            font-weight: 300;
+            letter-spacing: 2px;
+            animation: pulse-hint 2s infinite;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            z-index: 5;
+            text-shadow: 0 2px 10px rgba(255, 77, 109, 0.6);
+        }
+
+        @keyframes pulse-hint {
+            0%, 100% { opacity: 0.4; transform: translateX(-50%) scale(0.95); }
+            50% { opacity: 1; transform: translateX(-50%) scale(1.05); }
+        }
+
+        .hint-text.hidden {
+            opacity: 0 !important;
+        }
+
+        /* Contenedor de recuerdos */
+        #floating-elements {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Estilos base para mensajes y fotos */
+        .memory-element {
+            position: absolute;
+            opacity: 0;
+            transform: translateY(40px) scale(0.9);
+            transition: all 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .memory-element.show {
+            opacity: 1;
+            transform: translateY(0) scale(1) rotate(var(--rot, 0deg));
+        }
+
+        /* Animación de caída al presionar el corazón de nuevo */
+        .memory-element.fall {
+            opacity: 0 !important;
+            transform: translateY(120px) scale(0.8) rotate(calc(var(--rot, 0deg) + 15deg)) !important;
+        }
+
+        .floating-msg {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 30px;
+            padding: 12px 24px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 500;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            white-space: nowrap;
+        }
+
+        .floating-photo {
+            width: 140px;
+            padding: 8px 8px 25px 8px;
+            background: white;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            border-radius: 4px;
+            transform-origin: center top;
+            pointer-events: auto; /* Permite que las fotos sean clickeables */
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .floating-photo:hover {
+            z-index: 10;
+            transform: scale(1.05) rotate(0deg) !important;
+        }
+
+        .floating-photo img {
+            width: 100%;
+            border-radius: 2px;
+            aspect-ratio: 1/1;
+            object-fit: cover;
+            pointer-events: none; /* Para no interferir con el clic del contenedor padre */
+        }
+
+        /* --- MODAL PARA IMAGENES (NUEVO) --- */
+        .modal {
+            display: none; 
+            position: fixed;
+            z-index: 1000;
+            padding-top: 50px;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: rgba(0,0,0,0.9);
+            backdrop-filter: blur(8px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            max-height: 80vh;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(255, 77, 109, 0.4);
+            object-fit: contain;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        .close-modal:hover,
+        .close-modal:focus {
+            color: var(--primary-color);
+            text-decoration: none;
+            cursor: pointer;
+            transform: scale(1.1);
+        }
+
+        /* Botón de la carta */
+        #go-to-letter-btn {
+            position: absolute;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 35px;
+            background: rgba(255, 77, 109, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(5px);
+            color: white;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 1s ease;
+            z-index: 10;
+        }
+
+        #go-to-letter-btn:hover {
+            background: rgba(255, 77, 109, 1);
+            transform: translateX(-50%) scale(1.05);
+        }
+
+        #go-to-letter-btn.show {
+            bottom: 60px;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* --- ESCENA 2: LA CARTA --- */
+        #message-screen {
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            overflow-y: auto;
+            justify-content: flex-start;
+            padding: 40px 20px;
+            box-sizing: border-box;
+            color: var(--text-dark);
+        }
+
+        .content-container {
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+            text-align: center;
+            padding-bottom: 50px;
+        }
+
+        .letter {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            text-align: left;
+            position: relative;
+            margin-top: 50px;
+        }
+
+        .letter::before {
+            content: '❝';
+            font-family: serif;
+            font-size: 4rem;
+            color: rgba(255, 77, 109, 0.1);
+            position: absolute;
+            top: 10px;
+            left: 20px;
+        }
+
+        .letter h1 {
+            font-family: 'Playfair Display', serif;
+            color: var(--primary-color);
+            margin-top: 0;
+            font-size: 2rem;
+            text-align: center;
+        }
+
+        .letter p {
+            line-height: 1.8;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            color: #444;
+        }
+
+        .signature {
+            text-align: right;
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-top: 40px;
+        }
+
+        /* --- OPTIMIZACIÓN PARA DISPOSITIVOS MÓVILES --- */
+        @media (max-width: 600px) {
+            .hint-text {
+                font-size: 1rem;
+                bottom: 20%;
+            }
+            /* Textos más compactos y fotos más pequeñas para no tapar el corazón central */
+            .floating-msg { 
+                font-size: 0.85rem; 
+                padding: 10px 18px; 
+            }
+            .floating-photo { 
+                width: 100px; 
+                padding: 6px 6px 20px 6px; 
+            }
+            
+            /* Ajustes en la música y botones */
+            .music-player { 
+                width: 85%; 
+                justify-content: center; 
+                padding: 8px 15px;
+                font-size: 0.8rem;
+            }
+            .music-player.show {
+                top: 20px;
+            }
+            #go-to-letter-btn {
+                font-size: 1rem;
+                padding: 10px 25px;
+            }
+            #go-to-letter-btn.show {
+                bottom: 40px;
+            }
+
+            /* Ajustes en el modal para móvil */
+            .modal-content {
+                max-width: 95%;
+                max-height: 70vh;
+            }
+            .close-modal {
+                top: 15px;
+                right: 20px;
+                font-size: 35px;
+            }
+
+            /* Ajustes en la carta final */
+            .letter { 
+                padding: 25px; 
+                margin-top: 30px;
+            }
+            .letter h1 {
+                font-size: 1.6rem;
+            }
+            .letter p {
+                font-size: 0.95rem;
+                line-height: 1.6;
+            }
+            .letter::before {
+                font-size: 3rem;
+                top: 5px;
+                left: 10px;
+            }
+            .signature {
+                font-size: 1.2rem;
+                margin-top: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bg-music" loop>
+        <source src="Song.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Modal para ver imágenes en pantalla completa -->
+    <div id="image-modal" class="modal">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <img class="modal-content" id="modal-img">
+    </div>
+
+    <!-- ESCENA 1: EL UNIVERSO Y EL CORAZÓN -->
+    <div id="canvas-container"></div>
+    <div id="heart-screen" class="screen active">
+        
+        <div class="music-player" id="music-player">
+            <div class="icon">❚❚</div>
+            <div>Can your ears forgive me? Please ❤️</div>
+        </div>
+
+        <div id="click-hint" class="hint-text">Press the hearth ❤️</div>
+
+        <div id="floating-elements"></div>
+
+        <button id="go-to-letter-btn" onclick="showLetter()">Read my letter 💌</button>
+    </div>
+
+    <!-- ESCENA 2: LA CARTA FINAL -->
+    <div id="message-screen" class="screen">
+        <div class="content-container">
+            <div class="letter">
+                <h1>Dear Sarah</h1>
+                <p>Muchas gracias for making me sooooooooooooo happy, for caring about me and understanding me, for your time. I know you're very busy and often tired, and yet you still answer my messages and what I send you (which must be difficult because I don't think I'm very clear).</p>
+                <p>Believe me, I appreciate it so much. And again, I hope your ears can forgive me for how much I make them suffer.</p>
+                <p>So, happy two months, and I hope there will be many more!</p>
+                <div class="signature">With all my love,<br>Fabian</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const heartScreen = document.getElementById('heart-screen');
+        const messageScreen = document.getElementById('message-screen');
+        const canvasContainer = document.getElementById('canvas-container');
+        const audio = document.getElementById('bg-music');
+        const floatingContainer = document.getElementById('floating-elements');
+
+        // Variables Modal
+        const modal = document.getElementById('image-modal');
+        const modalImg = document.getElementById('modal-img');
+
+        let scene, camera, renderer, composer, particles, centralHeart;
+        let isTransitioning = false;
+        
+        // Variables para el control de la secuencia paso a paso
+        let isAudioPlaying = false;
+        let currentMemoryIndex = 0;
+        let currentActiveElement = null;
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        // REVISA ESTOS NOMBRES: Ahora están configurados para usar .jpg
+        const memories = [
+            { type: 'msg', text: 'Te amo un montónnnnnn, dont forget 💖', top: '25%', left: '10%' },
+            { type: 'photo', src: 'foto1.jpg', top: '55%', right: '15%', rot: '8deg' },
+            
+            { type: 'msg', text: 'I love your smile, dont forget smile please 🌟', top: '15%', right: '10%' },
+            { type: 'photo', src: 'foto2.jpg', top: '60%', left: '10%', rot: '-12deg' },
+            
+            { type: 'msg', text: 'Muchas gracias for being the best girlfriend ✨', top: '75%', left: '50%', transform: 'translateX(-50%)' },
+            { type: 'photo', src: 'foto3.jpg', top: '25%', left: '15%', rot: '5deg' },
+            
+            { type: 'msg', text: 'You are the best and my favorite voleyball player 🏐', top: '45%', right: '5%' },
+            { type: 'photo', src: 'foto4.jpg', top: '70%', right: '20%', rot: '-8deg' },
+            
+            { type: 'msg', text: 'Muchas gracias for your time 🕰️', top: '10%', left: '50%', transform: 'translateX(-50%)' },
+            { type: 'photo', src: 'foto5.jpg', top: '50%', left: '8%', rot: '15deg' },
+            
+            { type: 'msg', text: 'You make me very happy, muchas gracias ❤️', top: '35%', right: '12%' },
+            { type: 'photo', src: 'foto6.jpg', top: '15%', left: '20%', rot: '-5deg' },
+            
+            { type: 'msg', text: 'You are my whole universe. 🌌', top: '80%', left: '50%', transform: 'translateX(-50%)' },
+            { type: 'photo', src: 'foto7.jpg', top: '40%', right: '25%', rot: '10deg' }
+        ];
+
+        window.onload = initThreeJS;
+
+        // --- Funciones del Modal ---
+        function openModal(imageSrc) {
+            modalImg.src = imageSrc;
+            modal.classList.add('show');
+        }
+
+        function closeModal() {
+            modal.classList.remove('show');
+        }
+
+        // Cierra el modal si se hace clic fuera de la imagen (en el fondo negro)
+        modal.addEventListener('click', function(e) {
+            if (e.target !== modalImg) {
+                closeModal();
+            }
+        });
+
+        // --- Lógica Principal de Secuencia ---
+        function triggerNextMemory() {
+            // Ocultar el texto de ayuda al primer clic
+            const hintText = document.getElementById('click-hint');
+            if (hintText) hintText.classList.add('hidden');
+
+            if (!isAudioPlaying) {
+                audio.play().catch(e => console.log("Audio play failed:", e));
+                isAudioPlaying = true;
+                document.getElementById('music-player').classList.add('show');
+            }
+
+            centralHeart.scale.set(1.0, 1.0, 1.0);
+            centralHeart.material.emissive.setHex(0x660022);
+            setTimeout(() => {
+                if(centralHeart) centralHeart.material.emissive.setHex(0x330011);
+            }, 300);
+
+            if (currentActiveElement) {
+                currentActiveElement.classList.remove('show');
+                currentActiveElement.classList.add('fall');
+                setTimeout((el) => { if(el && el.parentNode) el.remove(); }, 1000, currentActiveElement);
+            }
+
+            if (currentMemoryIndex < memories.length) {
+                const memory = memories[currentMemoryIndex];
+                const div = document.createElement('div');
+                div.className = `memory-element ${memory.type === 'msg' ? 'floating-msg' : 'floating-photo'}`;
+                
+                if(memory.type === 'msg') {
+                    div.innerText = memory.text;
+                } else {
+                    div.style.setProperty('--rot', memory.rot);
+                    div.innerHTML = `<img src="${memory.src}" alt="Recuerdo">`;
+                    
+                    // Hacer la foto clickeable para abrir el Modal
+                    div.onclick = function() {
+                        openModal(memory.src);
+                    };
+                }
+
+                if(memory.top) div.style.top = memory.top;
+                if(memory.left) div.style.left = memory.left;
+                if(memory.right) div.style.right = memory.right;
+                if(memory.transform) div.style.transform = memory.transform; 
+
+                floatingContainer.appendChild(div);
+
+                void div.offsetWidth; 
+                div.classList.add('show');
+                currentActiveElement = div;
+                currentMemoryIndex++;
+            } else {
+                currentActiveElement = null;
+                document.getElementById('go-to-letter-btn').classList.add('show');
+                heartScreen.style.pointerEvents = 'auto';
+            }
+        }
+
+        function showLetter() {
+            if(isTransitioning) return;
+            isTransitioning = true;
+
+            document.getElementById('music-player').classList.remove('show');
+            document.getElementById('go-to-letter-btn').classList.remove('show');
+            
+            canvasContainer.style.transition = "opacity 1.5s";
+            canvasContainer.style.opacity = "0";
+            document.body.style.cursor = 'default';
+            
+            setTimeout(() => {
+                canvasContainer.style.display = "none";
+                messageScreen.classList.add('active');
+                messageScreen.style.overflowY = "auto";
+            }, 1500);
+        }
+
+        // --- MOTOR 3D ---
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x050510, 0.015);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 40;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.toneMapping = THREE.ReinhardToneMapping;
+            canvasContainer.appendChild(renderer.domElement);
+
+            const renderScene = new THREE.RenderPass(scene, camera);
+            const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 2.0, 0.4, 0.1);
+            bloomPass.strength = 1.8;
+            bloomPass.radius = 0.5;
+            
+            composer = new THREE.EffectComposer(renderer);
+            composer.addPass(renderScene);
+            composer.addPass(bloomPass);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            const pointLight = new THREE.PointLight(0xff4d6d, 2);
+            pointLight.position.set(10, 10, 10);
+            scene.add(pointLight);
+
+            const pointLight2 = new THREE.PointLight(0xff758f, 2);
+            pointLight2.position.set(-10, -10, 10);
+            scene.add(pointLight2);
+
+            // CORAZÓN CENTRAL "GORDITO"
+            const geometryHeart = new THREE.IcosahedronGeometry(2.2, 1); 
+            const posAttribute = geometryHeart.attributes.position;
+            
+            for (let i = 0; i < posAttribute.count; i++) {
+                let x = posAttribute.getX(i);
+                let y = posAttribute.getY(i);
+                let z = posAttribute.getZ(i);
+                
+                y = y + 1.2 * Math.pow(Math.abs(x), 0.7);
+                if (y < 0) {
+                    let taper = 1.0 + y * 0.3;
+                    taper = Math.max(0.2, taper);
+                    x *= taper;
+                    z *= taper;
+                } else {
+                    z *= 1.1;
+                }
+                x *= 1.15;
+                z *= 0.9;
+                y = y - 0.8; 
+                posAttribute.setXYZ(i, x, y, z);
+            }
+            geometryHeart.computeVertexNormals();
+
+            const materialHeart = new THREE.MeshPhysicalMaterial({ 
+                color: 0xff1040, emissive: 0x330011, metalness: 0.4, roughness: 0.05,
+                clearcoat: 1.0, clearcoatRoughness: 0.1, flatShading: true,
+                transparent: true, opacity: 0.95
+            });
+
+            centralHeart = new THREE.Mesh(geometryHeart, materialHeart);
+            centralHeart.scale.set(0.8, 0.8, 0.8);
+            
+            const innerLight = new THREE.PointLight(0xff4d6d, 1.5, 15);
+            centralHeart.add(innerLight);
+            scene.add(centralHeart);
+
+            const dirLightFront = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLightFront.position.set(0, 5, 15);
+            scene.add(dirLightFront);
+
+            // GALAXIA
+            const particlesCount = 8000;
+            const posArray = new Float32Array(particlesCount * 3);
+            const colorsArray = new Float32Array(particlesCount * 3);
+            const scalesArray = new Float32Array(particlesCount);
+            const randomsArray = new Float32Array(particlesCount);
+            const colorChoices = [new THREE.Color('#ff2a5f'), new THREE.Color('#ff4d6d'), new THREE.Color('#ff758f'), new THREE.Color('#ffb3c6'), new THREE.Color('#ffffff')];
+
+            for(let i = 0; i < particlesCount; i++) {
+                const i3 = i * 3;
+                const t = Math.random() * Math.PI * 2;
+                const hx = 16 * Math.pow(Math.sin(t), 3);
+                const hy = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+                const spread = Math.pow(Math.random(), 3) * 6; 
+                const angle = Math.random() * Math.PI * 2;
+                const scaleObj = 0.8;
+                
+                posArray[i3] = (hx * scaleObj) + Math.cos(angle) * spread;
+                posArray[i3+1] = (hy * scaleObj) + Math.sin(angle) * spread;
+                posArray[i3+2] = (Math.random() - 0.5) * spread * 3;
+
+                const color = colorChoices[Math.floor(Math.random() * colorChoices.length)];
+                colorsArray[i3] = color.r; colorsArray[i3+1] = color.g; colorsArray[i3+2] = color.b;
+                scalesArray[i] = Math.random(); randomsArray[i] = Math.random();
+            }
+
+            const geometryParticles = new THREE.BufferGeometry();
+            geometryParticles.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            geometryParticles.setAttribute('customColor', new THREE.BufferAttribute(colorsArray, 3));
+            geometryParticles.setAttribute('scale', new THREE.BufferAttribute(scalesArray, 1));
+            geometryParticles.setAttribute('random', new THREE.BufferAttribute(randomsArray, 1));
+
+            const particleShaderMaterial = new THREE.ShaderMaterial({
+                uniforms: { time: { value: 0 } },
+                vertexShader: `
+                    attribute float scale; attribute float random; attribute vec3 customColor; varying vec3 vColor; uniform float time;
+                    void main() {
+                        vColor = customColor; vec3 p = position;
+                        float angle = time * (0.2 + random * 0.3);
+                        float s = sin(angle); float c = cos(angle);
+                        float newX = p.x * c - p.z * s; float newZ = p.x * s + p.z * c;
+                        p.x = newX; p.z = newZ;
+                        float pulse = 1.0 + sin(time * 3.0 + random * 10.0) * 0.05;
+                        p *= pulse;
+                        vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
+                        gl_PointSize = (scale * 70.0) / -mvPosition.z; gl_Position = projectionMatrix * mvPosition;
+                    }
+                `,
+                fragmentShader: `
+                    varying vec3 vColor;
+                    void main() {
+                        vec2 xy = gl_PointCoord.xy - vec2(0.5);
+                        float ll = length(xy); if(ll > 0.5) discard;
+                        float alpha = pow((0.5 - ll) * 2.0, 1.5);
+                        gl_FragColor = vec4(vColor, alpha);
+                    }
+                `,
+                transparent: true, blending: THREE.AdditiveBlending, depthWrite: false
+            });
+
+            particles = new THREE.Points(geometryParticles, particleShaderMaterial);
+            scene.add(particles);
+
+            window.addEventListener('resize', onWindowResize, false);
+            window.addEventListener('pointerdown', onPointerDown, false);
+            window.addEventListener('pointermove', onPointerMove, false);
+
+            animate();
+        }
+
+        function onPointerDown(event) {
+            if(isTransitioning) return;
+            
+            // PREVENIR que se active el corazón si hacemos clic en la modal, en el botón o en la foto
+            if (event.target.closest('.modal') || event.target.closest('.floating-photo') || event.target.tagName === 'BUTTON') {
+                return;
+            }
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(centralHeart);
+            
+            if (intersects.length > 0) {
+                triggerNextMemory();
+            }
+        }
+
+        function onPointerMove(event) {
+            if(isTransitioning || modal.classList.contains('show')) return;
+            
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(centralHeart);
+            
+            if(currentMemoryIndex <= memories.length) {
+                document.body.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+
+            if (particles) {
+                particles.material.uniforms.time.value = elapsedTime;
+                particles.rotation.y = Math.sin(elapsedTime * 0.2) * 0.2;
+                particles.rotation.z = Math.cos(elapsedTime * 0.1) * 0.1;
+            }
+
+            if (centralHeart && !isTransitioning) {
+                const beat = Math.sin(elapsedTime * 5) * 0.03 + 0.8;
+                centralHeart.scale.set(beat, beat, beat);
+                centralHeart.rotation.y = elapsedTime * 0.5;
+                centralHeart.position.y = Math.sin(elapsedTime * 2) * 0.5;
+            }
+
+            composer.render();
+        }
+    </script>
+</body>
+</html>
